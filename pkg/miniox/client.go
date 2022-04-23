@@ -1,4 +1,4 @@
-package minio
+package miniox
 
 import (
 	"github.com/minio/minio-go/v7"
