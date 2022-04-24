@@ -11,9 +11,9 @@ import (
 var configClient config_client.IConfigClient
 
 type nacosConfig struct {
-	nacosx.Config
-	Group  string `json:"group" yaml:"group"`
-	DataId string `json:"data_id" yaml:"data_id"`
+	nacosx.Config `json:",inline" yaml:",inline"`
+	Group         string `json:"group" yaml:"group"`
+	DataId        string `json:"data_id" yaml:"data_id"`
 }
 
 func nacosParse(c string, key string, obj interface{}, watch ...func(string, error)) error {

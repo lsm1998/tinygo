@@ -19,7 +19,7 @@ type Option func(*Options)
 type Config struct {
 	Endpoints           []string `json:"endpoints" yaml:"endpoints"`
 	NamespaceId         string   `json:"namespace_id" yaml:"namespace_id"`
-	Username            string   `json:"username" yaml:"timeout"`
+	Username            string   `json:"username" yaml:"username"`
 	Password            string   `json:"password" yaml:"password"`
 	LogDir              string   `json:"log_dir" yaml:"log_dir"`
 	LogLevel            string   `json:"log_level" yaml:"log_level"`
