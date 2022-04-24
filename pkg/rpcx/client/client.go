@@ -107,8 +107,6 @@ func WithTimeout(timeout time.Duration) Option {
 }
 
 // WithProxy 创建客户端的时候在metadata指定需要代理的grpc服务的应用域名和监听端口，即可在本地连接到kae上的grpc服务
-// 调用该函数将默认使用 "kae-rpc-agent.wps.cn:81"
-// from: liaoyijun
 func WithProxy(addrs ...string) Option {
 	return func(options *Options) {
 		if tinygo.AppMod == "prod" {
@@ -117,7 +115,7 @@ func WithProxy(addrs ...string) Option {
 		if len(addrs) > 0 {
 			options.ProxyAddr = addrs[len(addrs)-1]
 		} else {
-			options.ProxyAddr = "kae-rpc-agent.wps.cn:81"
+			panic("WithProxy empty")
 		}
 	}
 }

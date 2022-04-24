@@ -29,18 +29,11 @@ var (
 	ClientRequestRate     = &Errno{Code: 2010200, Msg: "请求过频"}
 	ClientUnknownError    = &Errno{Code: 2999999, Msg: "未知客户端异常"}
 
-	TipsDbNull              = &Errno{Code: 4000100, Msg: "DB查询结果为空"}
-	TipsRedisNull           = &Errno{Code: 4000200, Msg: "redis查询结果为空"}
-	TipsEsNull              = &Errno{Code: 4000300, Msg: "es查询结果为空"}
-	TipsMongodbNull         = &Errno{Code: 4000400, Msg: "mongodb查询结果为空"}
-	TipsUserNoLogin         = &Errno{Code: 4010100, Msg: "用户未登录"}
-	TipsUserIsNoWpsVip      = &Errno{Code: 4010101, Msg: "用户非wps会员"}
-	TipsUserIsNoDocerVip    = &Errno{Code: 4010102, Msg: "用户非稻壳会员"}
-	TipsUserIsNoSuperVip    = &Errno{Code: 4010103, Msg: "用户非超级会员"}
-	TipsUserIsNoPrivilege   = &Errno{Code: 4010104, Msg: "用户没有特权包"}
-	TipsUserIsNoInFreeLimit = &Errno{Code: 4010105, Msg: "资源限免过期"}
-	TipsUserNoPermission    = &Errno{Code: 4010106, Msg: "用户无权限"}
-	TipsUnknownError        = &Errno{Code: 4999999, Msg: "未知服务提示"}
+	TipsDbNull      = &Errno{Code: 4000100, Msg: "DB查询结果为空"}
+	TipsRedisNull   = &Errno{Code: 4000200, Msg: "redis查询结果为空"}
+	TipsEsNull      = &Errno{Code: 4000300, Msg: "es查询结果为空"}
+	TipsMongodbNull = &Errno{Code: 4000400, Msg: "mongodb查询结果为空"}
+	TipsUserNoLogin = &Errno{Code: 4010100, Msg: "用户未登录"}
 
 	ErrorDbConnectFail        = &Errno{Code: 5000100, Msg: "数据库链接失败"}
 	ErrorDbSqlFail            = &Errno{Code: 5000101, Msg: "数据库SQL执行语句失败"}
