@@ -81,7 +81,11 @@ func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
 }
 
 func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
-	c.request.Header = header
+	if len(header) == 0 {
+		c.request.Header = make(http.Header)
+	} else {
+		c.request.Header = header
+	}
 	return c
 }
 
