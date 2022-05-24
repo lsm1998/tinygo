@@ -69,6 +69,17 @@ func (c *muteHttpClient) SetHeader(key, value string) *muteHttpClient {
 	return c
 }
 
+func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
+	c.request.URL, _ = url.Parse(c.url)
+	values, _ := url.ParseQuery(c.request.URL.RawQuery)
+	if values == nil {
+		values = make(url.Values)
+	}
+	values.Set(key, value)
+	c.url = c.url + "?" + values.Encode()
+	return c
+}
+
 func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
 	c.request.Header = header
 	return c
