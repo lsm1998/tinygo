@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -76,7 +77,11 @@ func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
 		values = make(url.Values)
 	}
 	values.Set(key, value)
-	c.url = c.url + "?" + values.Encode()
+	jointStr := "?"
+	if len(values) > 1 {
+		jointStr = ""
+	}
+	c.url = strings.TrimSuffix(c.url, c.request.URL.RawQuery) + jointStr + values.Encode()
 	return c
 }
 

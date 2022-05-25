@@ -13,7 +13,7 @@ func TestNew(t *testing.T) {
 	response, err := New("http://www.baidu.com").
 		SetQuery("name", "lsm").
 		SetQuery("age", "25").
-		SetPostForm(nil).
+		SetQuery("sex", "1").
 		Get(ctx)
 	if err != nil {
 		t.Fatal(err)
