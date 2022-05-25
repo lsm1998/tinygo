@@ -61,12 +61,17 @@ func (c *muteHttpClient) AddCookie(cookies ...*http.Cookie) *muteHttpClient {
 	return c
 }
 
-func (c *muteHttpClient) SetHeader(key, value string) *muteHttpClient {
+func (c *muteHttpClient) AddHeader(key, value string) *muteHttpClient {
 	if _, ok := c.request.Header[key]; ok {
 		c.request.Header[key] = append(c.request.Header[key], value)
 	} else {
 		c.request.Header[key] = []string{value}
 	}
+	return c
+}
+
+func (c *muteHttpClient) SetHeader(key, value string) *muteHttpClient {
+	c.request.Header[key] = []string{value}
 	return c
 }
 
