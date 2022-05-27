@@ -24,10 +24,14 @@ func (r *muteHttpResponse) GetBody() []byte {
 }
 
 func (r *muteHttpResponse) Curl() string {
+	body := string(r.client.body)
 	if r.client.request == nil {
 		return ""
 	}
-	return buildCurl(r.client.url, r.client.method, string(r.client.body), r.client.request.Header, r.client.request.Cookies())
+	if len(body) == 0 && len(r.client.request.PostForm) > 0 {
+		body = r.client.request.PostForm.Encode()
+	}
+	return buildCurl(r.client.url, r.client.method, body, r.client.request.Header, r.client.request.Cookies())
 }
 
 func (r *muteHttpResponse) UseTime() int64 {

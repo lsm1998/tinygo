@@ -143,6 +143,9 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpRespons
 	c.request = c.request.WithContext(ctx)
 	c.request.URL, err = url.ParseRequestURI(c.url)
 	c.request.Method = method
+	if len(c.body) == 0 && len(c.request.PostForm) > 0 {
+		c.request.Body = io.NopCloser(bytes.NewReader([]byte(c.request.PostForm.Encode())))
+	}
 	if err != nil {
 		goto RESULT
 	}
@@ -154,7 +157,7 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpRespons
 	if err != nil {
 		goto RESULT
 	}
-	response.Body.Close()
+	defer response.Body.Close()
 	if c.mustCode > 0 && response.StatusCode != c.mustCode {
 		err = codeMustErr
 		goto RESULT

@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -14,7 +15,8 @@ func TestNew(t *testing.T) {
 		SetQuery("name", "lsm").
 		SetQuery("age", "25").
 		SetQuery("sex", "1").
-		Get(ctx)
+		SetPostForm(url.Values{"username": []string{"lsm"}}).
+		Post(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
