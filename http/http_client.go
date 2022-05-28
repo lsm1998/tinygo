@@ -102,6 +102,7 @@ func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
 func (c *muteHttpClient) SetPostForm(value url.Values) *muteHttpClient {
 	c.request.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
 	c.request.PostForm = value
+	c.body = []byte(value.Encode())
 	return c
 }
 
@@ -143,9 +144,6 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpRespons
 	c.request = c.request.WithContext(ctx)
 	c.request.URL, err = url.ParseRequestURI(c.url)
 	c.request.Method = method
-	if len(c.body) == 0 && len(c.request.PostForm) > 0 {
-		c.request.Body = io.NopCloser(bytes.NewReader([]byte(c.request.PostForm.Encode())))
-	}
 	if err != nil {
 		goto RESULT
 	}
