@@ -15,24 +15,32 @@ import (
 )
 
 var (
+	// codeMustErr code不匹配错误
 	codeMustErr = errors.New("HTTP code mismatch")
 
+	// defaultClient 默认http client
 	defaultClient = &http.Client{
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				var d net.Dialer
 				c, err := d.DialContext(ctx, network, addr)
-				// c, err := net.DialTimeout(network, addr, timeout) //设置建立连接超时
 				if err != nil {
 					return nil, err
 				}
-				// _ = c.SetDeadline(time.Now().Add(timeout)) //设置发送接收数据超时
 				return c, nil
 			},
 		},
 	}
 )
 
+// muteHttpClient 请求client
+// url 请求url
+// mustCode 限定的返回http status code
+// method 请求方法
+// body 请求body
+// request http.Request
+// client http.Client
+// useTime 请求耗时
 type muteHttpClient struct {
 	url      string
 	mustCode int
@@ -43,10 +51,24 @@ type muteHttpClient struct {
 	useTime  int64
 }
 
-func New(url string) *muteHttpClient {
-	return &muteHttpClient{url: url, request: &http.Request{Header: map[string][]string{}}, client: defaultClient}
+// NewWithClient create muteHttpClient with you http client
+func NewWithClient(url string, client *http.Client) *muteHttpClient {
+	return &muteHttpClient{url: url, request: &http.Request{Header: make(http.Header, 16)}, client: client}
 }
 
+// NewWithTransport create muteHttpClient with you http transport
+func NewWithTransport(url string, transport *http.Transport) *muteHttpClient {
+	client := *defaultClient
+	client.Transport = transport
+	return NewWithClient(url, &client)
+}
+
+// New create muteHttpClient with default
+func New(url string) *muteHttpClient {
+	return NewWithClient(url, defaultClient)
+}
+
+// SetBodyJSON 设置JSON请求体
 func (c *muteHttpClient) SetBodyJSON(obj interface{}) *muteHttpClient {
 	c.body, _ = json.Marshal(obj)
 	c.request.Header["Content-Type"] = []string{"application/json"}
@@ -54,6 +76,7 @@ func (c *muteHttpClient) SetBodyJSON(obj interface{}) *muteHttpClient {
 	return c
 }
 
+// AddCookie 添加Cookie
 func (c *muteHttpClient) AddCookie(cookies ...*http.Cookie) *muteHttpClient {
 	for _, cookie := range cookies {
 		c.request.AddCookie(cookie)
@@ -61,6 +84,7 @@ func (c *muteHttpClient) AddCookie(cookies ...*http.Cookie) *muteHttpClient {
 	return c
 }
 
+// AddHeader 追加的方式写入一组http header
 func (c *muteHttpClient) AddHeader(key, value string) *muteHttpClient {
 	if _, ok := c.request.Header[key]; ok {
 		c.request.Header[key] = append(c.request.Header[key], value)
@@ -70,11 +94,13 @@ func (c *muteHttpClient) AddHeader(key, value string) *muteHttpClient {
 	return c
 }
 
+// SetHeader 覆盖的方式写入一组http header
 func (c *muteHttpClient) SetHeader(key, value string) *muteHttpClient {
 	c.request.Header[key] = []string{value}
 	return c
 }
 
+// SetQuery 设置请求query参数
 func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
 	c.request.URL, _ = url.Parse(c.url)
 	values, _ := url.ParseQuery(c.request.URL.RawQuery)
@@ -90,6 +116,7 @@ func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
 	return c
 }
 
+// Header 覆盖的方式设置http header
 func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
 	if len(header) == 0 {
 		c.request.Header = make(http.Header)
@@ -99,6 +126,7 @@ func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
 	return c
 }
 
+// SetPostForm 设置表单数据
 func (c *muteHttpClient) SetPostForm(value url.Values) *muteHttpClient {
 	c.request.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
 	c.request.PostForm = value
@@ -106,6 +134,7 @@ func (c *muteHttpClient) SetPostForm(value url.Values) *muteHttpClient {
 	return c
 }
 
+// MustCode set mustCode
 func (c *muteHttpClient) MustCode(code int) *muteHttpClient {
 	c.mustCode = code
 	return c
@@ -135,10 +164,10 @@ func (c *muteHttpClient) Patch(ctx context.Context) (muteHttpResponse, error) {
 	return c.do(http.MethodPatch, ctx)
 }
 
+// do send request
 func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpResponse, error) {
-	now := time.Now().UnixMilli()
+	startTime := time.Now().UnixMilli()
 	var err error
-	var response *http.Response
 	var result muteHttpResponse
 	c.method = method
 	c.request = c.request.WithContext(ctx)
@@ -147,20 +176,20 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpRespons
 	if err != nil {
 		goto RESULT
 	}
-	response, err = c.client.Do(c.request)
+	result.response, err = c.client.Do(c.request)
 	if err != nil {
 		goto RESULT
 	}
-	result.body, err = ioutil.ReadAll(response.Body)
+	result.body, err = ioutil.ReadAll(result.response.Body)
 	if err != nil {
 		goto RESULT
 	}
-	defer response.Body.Close()
-	if c.mustCode > 0 && response.StatusCode != c.mustCode {
+	defer result.response.Body.Close()
+	if c.mustCode > 0 && result.response.StatusCode != c.mustCode {
 		err = codeMustErr
 		goto RESULT
 	}
-	c.useTime = time.Now().UnixMilli() - now
+	c.useTime = time.Now().UnixMilli() - startTime
 RESULT:
 	result.client = *c
 	return result, err

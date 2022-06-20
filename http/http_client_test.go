@@ -21,6 +21,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	// fmt.Println(string(response.GetBody()))
+	fmt.Println(response.Code())
 	fmt.Println(response.Curl())
 	fmt.Println(response.UseTime())
 }
