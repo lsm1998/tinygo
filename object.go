@@ -1,14 +1,10 @@
 package tinygo
 
 import (
-	"bytes"
-	"encoding/gob"
+	"github.com/jinzhu/copier"
 )
 
+// Deprecated: this function simply calls copier.Copy.
 func DeepCopy(dst, src interface{}) error {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
-	}
-	return gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(dst)
+	return copier.Copy(dst, src)
 }
