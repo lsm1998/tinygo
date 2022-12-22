@@ -2,10 +2,11 @@ package configx
 
 import (
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"os"
 )
 
 const (
+	Empty            = ""
 	Local ConfigType = "config-local"
 	Nacos ConfigType = "config-nacos"
 )
@@ -19,7 +20,7 @@ type ConfigType string
 func LoadConfig(key string, typ ConfigType, obj interface{}, watch ...func(string, error)) error {
 	switch typ {
 	case Local:
-		bytes, err := ioutil.ReadFile(key)
+		bytes, err := os.ReadFile(key)
 		if err != nil {
 			return err
 		}
@@ -37,7 +38,7 @@ func LoadConfig(key string, typ ConfigType, obj interface{}, watch ...func(strin
 }
 
 func getConfig() (string, error) {
-	bytes, err := ioutil.ReadFile(bootstrapFile)
+	bytes, err := os.ReadFile(bootstrapFile)
 	if err != nil {
 		return "", err
 	}
