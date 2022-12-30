@@ -29,17 +29,16 @@ func WithConfig(conf Config) Option {
 	}
 }
 
-func Must(opts ...Option) *clientv3.Client {
-	e := &Options{}
-	for _, opt := range opts {
-		opt(e)
+func Optional(opts ...Option) *clientv3.Client {
+	client, err := newClient(opts...)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
-	client, err := clientv3.New(clientv3.Config{
-		Endpoints:   e.conf.Endpoints,
-		DialTimeout: time.Duration(e.conf.Timeout) * time.Second,
-		Username:    e.conf.Username,
-		Password:    e.conf.Password,
-	})
+	return client
+}
+
+func Must(opts ...Option) *clientv3.Client {
+	client, err := newClient(opts...)
 	if err != nil {
 		fmt.Println(err.Error())
 		log.Fatal(err)
@@ -47,26 +46,28 @@ func Must(opts ...Option) *clientv3.Client {
 	return client
 }
 
-func MustEtcdWithTimeout(ctx context.Context, opts ...Option) (*clientv3.Client, error) {
-	var (
-		client *clientv3.Client
-		err    error
-	)
-
-	c := make(chan struct{}, 1)
-
+func newClient(opts ...Option) (*clientv3.Client, error) {
 	e := &Options{}
 	for _, opt := range opts {
 		opt(e)
 	}
+	return clientv3.New(clientv3.Config{
+		Endpoints:   e.conf.Endpoints,
+		DialTimeout: time.Duration(e.conf.Timeout) * time.Second,
+		Username:    e.conf.Username,
+		Password:    e.conf.Password,
+	})
+}
+
+func MustEtcdWithTimeout(ctx context.Context, opts ...Option) (*clientv3.Client, error) {
+	var (
+		client *clientv3.Client
+		err    error
+		c      = make(chan struct{}, 1)
+	)
 
 	go func() {
-		client, err = clientv3.New(clientv3.Config{
-			Endpoints:   e.conf.Endpoints,
-			DialTimeout: time.Duration(e.conf.Timeout) * time.Second,
-			Username:    e.conf.Username,
-			Password:    e.conf.Password,
-		})
+		client, err = newClient(opts...)
 		c <- struct{}{}
 	}()
 
