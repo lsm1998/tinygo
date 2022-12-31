@@ -5,6 +5,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/vo"
+	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"strings"
 )
@@ -33,7 +34,23 @@ func WithConfig(conf Config) Option {
 	}
 }
 
+func Optional(opts ...Option) config_client.IConfigClient {
+	db, err := newConfigClient(opts...)
+	if err != nil {
+		return nil
+	}
+	return db
+}
+
 func Must(opts ...Option) config_client.IConfigClient {
+	db, err := newConfigClient(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func newConfigClient(opts ...Option) (config_client.IConfigClient, error) {
 	e := &Options{}
 	for _, opt := range opts {
 		opt(e)
@@ -42,7 +59,7 @@ func Must(opts ...Option) config_client.IConfigClient {
 	for _, v := range e.conf.Endpoints {
 		split := strings.Split(v, ":")
 		if len(split) != 2 {
-			panic("nacosx Config Endpoints split error")
+			return nil, errors.New("nacosx Config Endpoints split error")
 		}
 		serverConfigs = append(serverConfigs, constant.ServerConfig{
 			IpAddr: split[0],
@@ -65,7 +82,7 @@ func Must(opts ...Option) config_client.IConfigClient {
 		},
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return configClient
+	return configClient, nil
 }

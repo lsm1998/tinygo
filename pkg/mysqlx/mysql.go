@@ -36,7 +36,23 @@ func WithConfig(conf Config) Option {
 	}
 }
 
+func Optional(opts ...Option) *gorm.DB {
+	db, err := newDB(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
 func Must(opts ...Option) *gorm.DB {
+	db, err := newDB(opts...)
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+func newDB(opts ...Option) (*gorm.DB, error) {
 	e := &Options{}
 	for _, opt := range opts {
 		opt(e)
@@ -61,9 +77,9 @@ func Must(opts ...Option) *gorm.DB {
 			SetMaxOpenConns(e.conf.MaxOpenConn),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return db
+	return db, nil
 }
 
 func dsn(c Configx) string {
