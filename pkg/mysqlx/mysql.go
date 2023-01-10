@@ -5,6 +5,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
+	"strings"
 	"time"
 )
 
@@ -28,6 +29,7 @@ type Configx struct {
 	DBName   string `json:"db_name" yaml:"db_name"`
 	Username string `json:"username" yaml:"username"`
 	Password string `json:"password" yaml:"password"`
+	Param    string `json:"param" yaml:"param"`
 }
 
 func WithConfig(conf Config) Option {
@@ -83,10 +85,14 @@ func newDB(opts ...Option) (*gorm.DB, error) {
 }
 
 func dsn(c Configx) string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&loc=Local",
+	if c.Param != "" && !strings.HasPrefix(c.Param, "?") {
+		c.Param = "?" + c.Param
+	}
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s%s",
 		c.Username,
 		c.Password,
 		c.Addr,
 		c.Port,
-		c.DBName)
+		c.DBName,
+		c.Param)
 }
