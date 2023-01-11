@@ -30,7 +30,7 @@ func (b *Builder) Build(target resolver.Target, cc resolver.ClientConn, opts res
 	r := &Resolver{
 		cc: cc,
 	}
-	prefix := fmt.Sprintf("/%s/%s/", "docer_discov", target.Endpoint)
+	prefix := fmt.Sprintf("/%s%s/", "docer_discov", target.URL.Path)
 	notify := etcdx.Notify(func(_ *clientv3.Event, address []string) {
 		if len(address) == 0 {
 			address = append(address, b.domain)
