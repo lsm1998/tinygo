@@ -21,6 +21,8 @@ func TestGrpcCli(t *testing.T) {
 
 	// no2 init client
 	RpcApiClient(client.RpcClientConf{ServiceName: "grpc_ser_test"}, etcdClient)
+	// direct connection mode
+	// RpcApiClient(client.RpcClientConf{ServiceName: "grpc_ser_test", Addr: "127.0.0.1:8081"}, etcdClient)
 
 	// no3 ...
 	for {

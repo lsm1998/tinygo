@@ -15,8 +15,8 @@ type Builder struct {
 
 // NewBuilder TODO 将 client，domain 用 options 包裹起来，以统一写法
 func NewBuilder(client *clientv3.Client, domain string) *Builder {
-	if domain == "" {
-		logrus.Warn("domain cannot be empty")
+	if domain != "" {
+		logrus.Infof("domain:%s direct connection", domain)
 	}
 	r := &Builder{
 		watcher: etcdx.NewWatcher(client),
@@ -31,13 +31,12 @@ func (b *Builder) Build(target resolver.Target, cc resolver.ClientConn, opts res
 		cc: cc,
 	}
 	prefix := fmt.Sprintf("/%s%s/", "docer_discov", target.URL.Path)
+	if b.domain != "" {
+		r.Update([]string{b.domain})
+		return r, nil
+	}
 	notify := etcdx.Notify(func(_ *clientv3.Event, address []string) {
-		if len(address) == 0 {
-			address = append(address, b.domain)
-			logrus.Warnf("target: %s, grpc address is empty , add the application address  %+v", prefix, address)
-		} else {
-			logrus.Infof("target: %s, grpc address change to %+v", prefix, address)
-		}
+		logrus.Infof("target: %s, grpc address change to %+v", prefix, address)
 		r.Update(address)
 	})
 	b.watcher.SetPrefix(prefix)
