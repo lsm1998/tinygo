@@ -1,15 +1,14 @@
 package http
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -32,121 +31,163 @@ var (
 	}
 )
 
+type MuteHttpClient interface {
+	AddCookie(cookies ...*http.Cookie) MuteHttpClient
+
+	SetHeader(key, value string) MuteHttpClient
+
+	SetQuery(key, value string) MuteHttpClient
+
+	Header(header http.Header) MuteHttpClient
+
+	SetPostForm(value url.Values) MuteHttpClient
+
+	SetBodyJSON(obj interface{}) MuteHttpClient
+
+	MustCode(code int) MuteHttpClient
+
+	Post(ctx context.Context) (MuteHttpResponse, error)
+
+	Get(ctx context.Context) (MuteHttpResponse, error)
+
+	Put(ctx context.Context) (MuteHttpResponse, error)
+
+	Delete(ctx context.Context) (MuteHttpResponse, error)
+
+	Options(ctx context.Context) (MuteHttpResponse, error)
+
+	Patch(ctx context.Context) (MuteHttpResponse, error)
+}
+
 type muteHttpClient struct {
 	url      string
 	mustCode int
 	method   string
-	body     []byte
+	bodyByte []byte
+	body     io.Reader
 	request  *http.Request
 	client   *http.Client
 	useTime  int64
+	header   http.Header
+	cookies  []*http.Cookie
+	postForm url.Values
+	query    url.Values
 }
 
-func New(url string) *muteHttpClient {
-	return &muteHttpClient{url: url, request: &http.Request{Header: map[string][]string{}}, client: defaultClient}
+func New(url string) MuteHttpClient {
+	return &muteHttpClient{url: url, client: defaultClient, header: make(http.Header)}
 }
 
-func (c *muteHttpClient) SetBodyJSON(obj interface{}) *muteHttpClient {
-	c.body, _ = json.Marshal(obj)
-	c.request.Header["Content-Type"] = []string{"application/json"}
-	c.request.Body = io.NopCloser(bytes.NewReader(c.body))
+func (c *muteHttpClient) SetBodyJSON(obj interface{}) MuteHttpClient {
+	c.bodyByte, _ = json.Marshal(obj)
+
+	c.body = strings.NewReader(string(c.bodyByte))
+
+	c.header.Set("Content-Type", "application/json")
 	return c
 }
 
-func (c *muteHttpClient) AddCookie(cookies ...*http.Cookie) *muteHttpClient {
+func (c *muteHttpClient) AddCookie(cookies ...*http.Cookie) MuteHttpClient {
 	for _, cookie := range cookies {
 		c.request.AddCookie(cookie)
 	}
 	return c
 }
 
-func (c *muteHttpClient) SetHeader(key, value string) *muteHttpClient {
-	if _, ok := c.request.Header[key]; ok {
-		c.request.Header[key] = append(c.request.Header[key], value)
+func (c *muteHttpClient) SetHeader(key, value string) MuteHttpClient {
+	if _, ok := c.header[key]; ok {
+		c.header[key] = append(c.header[key], value)
 	} else {
-		c.request.Header[key] = []string{value}
+		c.header[key] = []string{value}
 	}
 	return c
 }
 
-func (c *muteHttpClient) SetQuery(key, value string) *muteHttpClient {
-	c.request.URL, _ = url.Parse(c.url)
-	values, _ := url.ParseQuery(c.request.URL.RawQuery)
-	if values == nil {
-		values = make(url.Values)
+func (c *muteHttpClient) SetQuery(key, value string) MuteHttpClient {
+	if c.query == nil {
+		c.query = make(url.Values)
 	}
-	values.Set(key, value)
-	c.url = c.url + "?" + values.Encode()
+	c.query.Set(key, value)
 	return c
 }
 
-func (c *muteHttpClient) Header(header http.Header) *muteHttpClient {
-	c.request.Header = header
+func (c *muteHttpClient) Header(header http.Header) MuteHttpClient {
+	c.header = header
 	return c
 }
 
-func (c *muteHttpClient) SetPostForm(value url.Values) *muteHttpClient {
-	c.request.Header["Content-Type"] = []string{"application/x-www-form-urlencoded"}
-	c.request.PostForm = value
+func (c *muteHttpClient) SetPostForm(value url.Values) MuteHttpClient {
+	c.header.Set("Content-Type", "application/x-www-form-urlencoded")
+	c.postForm = value
 	return c
 }
 
-func (c *muteHttpClient) MustCode(code int) *muteHttpClient {
+func (c *muteHttpClient) MustCode(code int) MuteHttpClient {
 	c.mustCode = code
 	return c
 }
 
-func (c *muteHttpClient) Post(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Post(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodPost, ctx)
 }
 
-func (c *muteHttpClient) Get(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Get(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodGet, ctx)
 }
 
-func (c *muteHttpClient) Put(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Put(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodPut, ctx)
 }
 
-func (c *muteHttpClient) Delete(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Delete(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodDelete, ctx)
 }
 
-func (c *muteHttpClient) Options(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Options(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodOptions, ctx)
 }
 
-func (c *muteHttpClient) Patch(ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) Patch(ctx context.Context) (MuteHttpResponse, error) {
 	return c.do(http.MethodPatch, ctx)
 }
 
-func (c *muteHttpClient) do(method string, ctx context.Context) (muteHttpResponse, error) {
+func (c *muteHttpClient) do(method string, ctx context.Context) (MuteHttpResponse, error) {
 	now := time.Now().UnixMilli()
 	var err error
 	var response *http.Response
-	var result muteHttpResponse
+	var result = new(muteHttpResponse)
 	c.method = method
-	c.request = c.request.WithContext(ctx)
-	c.request.URL, err = url.ParseRequestURI(c.url)
-	c.request.Method = method
+	c.request, err = http.NewRequest(method, c.url, c.body)
 	if err != nil {
 		goto RESULT
 	}
+	c.request = c.request.WithContext(ctx)
+	c.request.Header = c.header
+	c.request.PostForm = c.postForm
+	c.request.URL, err = url.ParseRequestURI(c.url)
+	if err != nil {
+		goto RESULT
+	}
+	for key, values := range c.query {
+		c.request.URL.Query().Set(key, values[0])
+	}
+
 	response, err = c.client.Do(c.request)
 	if err != nil {
 		goto RESULT
 	}
-	result.body, err = ioutil.ReadAll(response.Body)
+	result.body, err = io.ReadAll(response.Body)
 	if err != nil {
 		goto RESULT
 	}
-	response.Body.Close()
+	defer response.Body.Close()
 	if c.mustCode > 0 && response.StatusCode != c.mustCode {
 		err = codeMustErr
 		goto RESULT
 	}
 	c.useTime = time.Now().UnixMilli() - now
 RESULT:
+	result.response = response
 	result.client = *c
 	return result, err
 }

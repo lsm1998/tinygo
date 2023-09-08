@@ -5,6 +5,18 @@ import (
 	"net/http"
 )
 
+type MuteHttpResponse interface {
+	Code() int
+
+	GetBody() []byte
+
+	Curl() string
+
+	UseTime() int64
+
+	Unmarshal(resp interface{}) error
+}
+
 type muteHttpResponse struct {
 	response *http.Response
 	client   muteHttpClient
@@ -27,7 +39,7 @@ func (r *muteHttpResponse) Curl() string {
 	if r.client.request == nil {
 		return ""
 	}
-	return buildCurl(r.client.url, r.client.method, string(r.client.body), r.client.request.Header, r.client.request.Cookies())
+	return buildCurl(r.client.url, r.client.method, string(r.client.bodyByte), r.client.request.Header, r.client.request.Cookies())
 }
 
 func (r *muteHttpResponse) UseTime() int64 {
