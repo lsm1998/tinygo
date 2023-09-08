@@ -156,6 +156,7 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (MuteHttpRespons
 	var err error
 	var response *http.Response
 	var result = new(muteHttpResponse)
+	var query url.Values
 	c.method = method
 	c.request, err = http.NewRequest(method, c.url, c.body)
 	if err != nil {
@@ -165,12 +166,17 @@ func (c *muteHttpClient) do(method string, ctx context.Context) (MuteHttpRespons
 	c.request.Header = c.header
 	c.request.PostForm = c.postForm
 	c.request.URL, err = url.ParseRequestURI(c.url)
+	query = c.request.URL.Query()
 	if err != nil {
 		goto RESULT
 	}
+
 	for key, values := range c.query {
-		c.request.URL.Query().Set(key, values[0])
+		for _, value := range values {
+			query.Add(key, value)
+		}
 	}
+	c.request.URL.RawQuery = query.Encode()
 
 	response, err = c.client.Do(c.request)
 	if err != nil {
