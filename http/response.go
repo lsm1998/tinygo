@@ -15,6 +15,10 @@ type MuteHttpResponse interface {
 	UseTime() int64
 
 	Unmarshal(resp interface{}) error
+
+	GetHeader(key string) string
+
+	Header() http.Header
 }
 
 type muteHttpResponse struct {
@@ -48,4 +52,18 @@ func (r *muteHttpResponse) UseTime() int64 {
 
 func (r *muteHttpResponse) Unmarshal(resp interface{}) error {
 	return json.Unmarshal(r.body, resp)
+}
+
+func (r *muteHttpResponse) GetHeader(key string) string {
+	if r.response == nil {
+		return ""
+	}
+	return r.response.Header.Get(key)
+}
+
+func (r *muteHttpResponse) Header() http.Header {
+	if r.response == nil {
+		return nil
+	}
+	return r.response.Header
 }
